@@ -1,0 +1,52 @@
+name: Backup policy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate backup policy shape
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p = json.loads(Path('.github/repo-policy.json').read_text())
+          assert p['schema_version'] == 1
+          assert p['profile'] == 'backup-main'
+          assert p['delivery']['mode'] == 'direct-main'
+          assert p['delivery']['base_branch'] == 'main'
+          assert p['delivery']['upstream_push'] == 'forbidden'
+          print('POLICY_PASS: backup-main contract')
+          PY
+      - name: Check changed paths and diff shape
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --name-only "origin/${{ github.base_ref }}...${{ github.event.pull_request.head.sha }}" > /tmp/changed-files.txt
+          else
+            git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" > /tmp/changed-files.txt
+          fi
+          if grep -Eiq '(^|/)(\.env($|\.)|auth(-profiles)?\.json($|\.)|state\.db$|sessions?/|transcripts?/|id_(rsa|ed25519)$|[^/]+\.(pem|p12|key)$)' /tmp/changed-files.txt; then
+            echo 'POLICY_FAIL: secret-like path changed' >&2
+            cat /tmp/changed-files.txt
+            exit 1
+          fi
+          git diff --check
+      - name: Focused source verification
+        run: |
+          if [ -x ./scripts/run_tests.sh ]; then
+            ./scripts/run_tests.sh tests/tools/test_terminal_tool.py
+          else
+            python3 -m compileall -q tools tests/tools
+          fi

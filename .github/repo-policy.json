@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "repository": "nubi-strawberryy/hermes-agent",
+  "repo_class": "personal-backup",
+  "profile": "backup-main",
+  "delivery": {
+    "mode": "direct-main",
+    "base_branch": "main",
+    "allowed_base_branches": ["main"],
+    "agent_branch_prefixes": [],
+    "pull_requests": "optional",
+    "upstream_push": "forbidden",
+    "canonical_remote": "fork"
+  },
+  "verification": {
+    "required": ["focused-tests", "git-diff-check", "secret-scan", "remote-sha-readback"],
+    "preserve_unrelated_changes": true
+  },
+  "content_boundary": {
+    "allowed": ["source", "tests", "docs", "public-workflow-files"],
+    "forbidden": [".env", "auth.json", "state.db", "sessions", "transcripts", "private-keys", "unsanitized-runtime-state"]
+  }
+}
