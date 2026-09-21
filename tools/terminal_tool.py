@@ -165,6 +165,13 @@ Foreground (default): returns INSTANTLY when the command finishes, even with a h
 Background: set background=true (returns a session_id) only for commands that must keep running independently after this tool call returns; add notify=true for bounded tasks, leave silent only for servers/daemons that never exit. Do not start sleep, timers, cooldowns, delays, or polling loops with background=true — to wait a fixed time, run the wait as a normal foreground command with a high enough timeout. After starting a server, verify readiness with a health check in a separate call (no blind sleep loops); manage with process(action="poll"/"wait").
 Working directory: use 'workdir' for per-command cwd; when a command changes the session cwd (cd, pushd), trust the result's "cwd" field instead of prefixing every command with 'cd'.
 PTY: pty=true + background=true for interactive CLIs (they hang without a terminal); drive them with process(action="write"/"submit"). Local backend only.
+
+SECURE INPUT:
+- For a normal user decision or non-secret missing detail, use the `clarify` tool — not a shell prompt.
+- For a host privilege escalation, put the real command in a foreground `terminal` call with ordinary `sudo ...` (do not add `-S`, do not pipe a password, and do not use a PTY/background workaround). On an interactive Hermes Desktop/CLI/TUI surface, Hermes intercepts the sudo invocation and opens its native masked password prompt (`sudo.request`); the password is never sent through chat, command arguments, stdin, logs, or model context.
+- For a skill/provider secret, use the skill's prerequisite/secret-capture flow; on interactive Desktop/CLI/TUI this opens the native masked secret prompt (`secret.request`). Never ask the user to paste a secret into chat, `clarify`, a command, stdin, an environment assignment, or a file.
+- This secure prompt path is surface-dependent: interactive Desktop/CLI/TUI can show it. Messaging, API, cron, one-shot, and delegated-child contexts cannot collect a fresh secret interactively; they may use an already-configured `SUDO_PASSWORD` from Hermes' secret environment, but must never ask the user to create or reveal it in chat. Without a configured fallback, fail closed with a concise handoff instead of inventing a password channel.
+- Do not use `computer_use`, an external terminal, or a background PTY to collect a password. Those can bypass Hermes' masked prompt bridge.
 """
 
 # Environment lifecycle state.
