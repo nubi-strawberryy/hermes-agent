@@ -30,6 +30,18 @@ def test_terminal_schema_advertises_persistent_env_state():
     assert "once per session" in description
 
 
+def test_terminal_schema_explains_native_secure_input_boundaries():
+    description = terminal_tool.TERMINAL_TOOL_DESCRIPTION
+
+    assert "foreground `terminal` call with ordinary `sudo ...`" in description
+    assert "native masked password prompt (`sudo.request`)" in description
+    assert "native masked secret prompt (`secret.request`)" in description
+    assert "do not add `-S`" in description
+    assert "background PTY" in description
+    assert "already-configured `SUDO_PASSWORD`" in description
+    assert "never ask the user to create or reveal it in chat" in description
+
+
 def test_printf_literal_sudo_does_not_trigger_rewrite(monkeypatch):
     monkeypatch.delenv("SUDO_PASSWORD", raising=False)
     monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
